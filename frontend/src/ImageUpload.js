@@ -1,0 +1,112 @@
+import React, {useState} from 'react';
+import {Button} from '@mui/material'
+import './ImageUpload.css'
+import { apiUrl } from './api';
+
+function ImageUpload({authToken, authTokenType, userId}) {
+  const [caption, setCaption] = useState('');
+  const [img, setImage] = useState(null);
+  const [title, setTitle] = useState("");
+
+  const handleChange = (e) => {
+    if (e.target.files[0]) {
+      setImage(e.target.files[0])
+    }
+  }
+
+  const handleUpload = (e) => {
+    e?.preventDefault();
+
+    const formData = new FormData();
+    formData.append('img', img)
+
+    const requestOptions = {
+      method: 'POST',
+      headers: new Headers({
+        'Authorization': authTokenType + ' ' + authToken
+      }),
+      body: formData
+    }
+
+    fetch(apiUrl('post/image'), requestOptions)
+      .then(response => {
+        if (response.ok) {
+          return response.json()
+        }
+        throw response
+      })
+      .then(data => {
+        createPost(data.url)
+      })
+      .catch(error => {
+        console.log(error);
+      })
+      .finally(() => {
+        setCaption('')
+        setImage(null)
+        document.getElementById('fileInput').value = null
+      })
+  }
+
+  const createPost = (imageUrl) => {
+
+    const json_string = JSON.stringify({
+      'post_title': title,
+      'image_url': imageUrl,
+      'image_url_type': 'relative',
+      'caption': caption,
+      'user_id': userId
+    })
+
+    const requestOptions = {
+      method: 'POST',
+      headers: new Headers({
+        'Authorization': authTokenType + ' ' + authToken,
+        'Content-Type': 'application/json'
+      }),
+      body: json_string
+    }
+
+    fetch(apiUrl('post/create'), requestOptions)
+      .then(response => {
+        if (response.ok) {
+          return response.json()
+        }
+        throw response
+      })
+      .then(data => {
+        window.location.reload()
+        window.scrollTo(0, 0)
+      })
+      .catch(error => {
+        console.log(error);
+      })
+  }
+
+  return (
+    <div className="imageupload">
+      <input
+        type="file"
+        id="fileInput"
+        onChange={handleChange}
+      />
+      <input 
+        type="text"
+        placeholder="Enter a caption"
+        onChange={(event) => setCaption(event.target.value)}
+        value={caption}
+      />
+      <input 
+        type="text"
+        placeholder="Title"
+        onChange={(event) => setTitle(event.target.value)}
+        value={title}
+      />
+      <Button className="imageupload_button" onClick={handleUpload}>
+        Upload
+      </Button>
+    </div>
+  )
+}
+
+export default ImageUpload;
