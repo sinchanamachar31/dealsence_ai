@@ -1,112 +1,153 @@
-import React, {useState} from 'react';
-import {Button} from '@mui/material'
-import './ImageUpload.css'
+import React, { useEffect, useRef, useState } from 'react';
+import './ImageUpload.css';
+import Icon from './Icon';
 import { apiUrl } from './api';
 
-function ImageUpload({authToken, authTokenType, userId}) {
+function ImageUpload({ authToken, authTokenType, userId, username, onPostCreated }) {
   const [caption, setCaption] = useState('');
-  const [img, setImage] = useState(null);
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState('');
+  const [image, setImage] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState('');
+  const fileInputRef = useRef(null);
+  const [previewUrl, setPreviewUrl] = useState('');
 
-  const handleChange = (e) => {
-    if (e.target.files[0]) {
-      setImage(e.target.files[0])
-    }
-  }
-
-  const handleUpload = (e) => {
-    e?.preventDefault();
-
-    const formData = new FormData();
-    formData.append('img', img)
-
-    const requestOptions = {
-      method: 'POST',
-      headers: new Headers({
-        'Authorization': authTokenType + ' ' + authToken
-      }),
-      body: formData
+  useEffect(() => {
+    if (!image) {
+      setPreviewUrl('');
+      return undefined;
     }
 
-    fetch(apiUrl('post/image'), requestOptions)
-      .then(response => {
-        if (response.ok) {
-          return response.json()
-        }
-        throw response
-      })
-      .then(data => {
-        createPost(data.url)
-      })
-      .catch(error => {
-        console.log(error);
-      })
-      .finally(() => {
-        setCaption('')
-        setImage(null)
-        document.getElementById('fileInput').value = null
-      })
-  }
+    const objectUrl = URL.createObjectURL(image);
+    setPreviewUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [image]);
 
-  const createPost = (imageUrl) => {
-
-    const json_string = JSON.stringify({
-      'post_title': title,
-      'image_url': imageUrl,
-      'image_url_type': 'relative',
-      'caption': caption,
-      'user_id': userId
-    })
-
-    const requestOptions = {
-      method: 'POST',
-      headers: new Headers({
-        'Authorization': authTokenType + ' ' + authToken,
-        'Content-Type': 'application/json'
-      }),
-      body: json_string
+  const handleUpload = async (event) => {
+    event.preventDefault();
+    if (!image || isUploading) {
+      return;
     }
 
-    fetch(apiUrl('post/create'), requestOptions)
-      .then(response => {
-        if (response.ok) {
-          return response.json()
-        }
-        throw response
-      })
-      .then(data => {
-        window.location.reload()
-        window.scrollTo(0, 0)
-      })
-      .catch(error => {
-        console.log(error);
-      })
-  }
+    setIsUploading(true);
+    setError('');
+    try {
+      const formData = new FormData();
+      formData.append('img', image);
+      const uploadResponse = await fetch(apiUrl('post/image'), {
+        method: 'POST',
+        headers: new Headers({ Authorization: `${authTokenType} ${authToken}` }),
+        body: formData,
+      });
+      const uploadData = await uploadResponse.json();
+      if (!uploadResponse.ok) {
+        throw new Error(uploadData.detail || `Image upload failed (${uploadResponse.status}).`);
+      }
+
+      const postResponse = await fetch(apiUrl('post/create'), {
+        method: 'POST',
+        headers: new Headers({
+          Authorization: `${authTokenType} ${authToken}`,
+          'Content-Type': 'application/json',
+        }),
+        body: JSON.stringify({
+          post_title: title.trim() || 'A moment shared',
+          image_url: uploadData.url,
+          image_url_type: 'relative',
+          caption: caption.trim(),
+          user_id: Number(userId),
+        }),
+      });
+      const postData = await postResponse.json();
+      if (!postResponse.ok) {
+        throw new Error(postData.detail || `Could not create post (${postResponse.status}).`);
+      }
+
+      onPostCreated({
+        ...postData,
+        user_id: Number(userId),
+        user: postData.user || { username },
+        comments: postData.comments || [],
+      });
+      setCaption('');
+      setTitle('');
+      setImage(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (uploadError) {
+      setError(uploadError.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return (
-    <div className="imageupload">
-      <input
-        type="file"
-        id="fileInput"
-        onChange={handleChange}
-      />
-      <input 
-        type="text"
-        placeholder="Enter a caption"
-        onChange={(event) => setCaption(event.target.value)}
-        value={caption}
-      />
-      <input 
-        type="text"
-        placeholder="Title"
-        onChange={(event) => setTitle(event.target.value)}
-        value={title}
-      />
-      <Button className="imageupload_button" onClick={handleUpload}>
-        Upload
-      </Button>
-    </div>
-  )
+    <section className="composer-card" aria-label="Create a post">
+      <div className="composer-heading">
+        <div>
+          <span className="eyebrow">MAKE SOMETHING MEMORABLE</span>
+          <h2>Share a moment</h2>
+        </div>
+        <span className="composer-heading-icon"><Icon name="plus" /></span>
+      </div>
+
+      <form className="composer-form" onSubmit={handleUpload}>
+        <div className={`image-picker${previewUrl ? ' image-picker--preview' : ''}`}>
+          {previewUrl ? (
+            <img src={previewUrl} alt="Preview of the selected upload" />
+          ) : (
+            <div className="image-picker-prompt">
+              <span className="image-picker-icon"><Icon name="camera" /></span>
+              <strong>Choose a photo</strong>
+              <span>JPG, PNG or GIF</span>
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            id="fileInput"
+            className="visually-hidden"
+            type="file"
+            accept="image/*"
+            onChange={(event) => setImage(event.target.files?.[0] || null)}
+            aria-label="Choose an image"
+          />
+          <button
+            className="image-picker-button"
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {previewUrl ? 'Change photo' : 'Choose photo'}
+          </button>
+        </div>
+
+        <div className="composer-fields">
+          <label htmlFor="post-title">A title for this moment</label>
+          <input
+            id="post-title"
+            type="text"
+            placeholder="A moment shared"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            maxLength={256}
+          />
+          <label htmlFor="post-caption">Add a caption</label>
+          <textarea
+            id="post-caption"
+            placeholder="What made this moment special?"
+            value={caption}
+            onChange={(event) => setCaption(event.target.value)}
+            maxLength={512}
+            rows={3}
+          />
+          {error && <p className="composer-error" role="alert">{error}</p>}
+          <button className="primary-button composer-submit" type="submit" disabled={!image || isUploading}>
+            {isUploading ? 'Sharing your moment…' : 'Share post'}
+          </button>
+        </div>
+      </form>
+    </section>
+  );
 }
 
 export default ImageUpload;

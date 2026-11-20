@@ -1,16 +1,228 @@
-.imageupload {
-  display: flex;
-  flex-direction: column;
-  width: 60%;
-  max-width: 500px;
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 10px;
-  margin-bottom: 10px;
-  background-color: white;
-  border-top: 1px solid lightgray;
+.composer-card {
+  padding: 22px;
+  background:
+    radial-gradient(ellipse at 100% 0, rgba(246, 232, 249, .55), transparent 38%),
+    #fff;
+  border: 1px solid #eee7f0;
+  border-radius: 17px;
+  box-shadow: 0 10px 32px rgba(48, 30, 59, .05);
 }
 
-.imageupload_button{
-  max-width: 100%;
+.composer-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.composer-heading h2 {
+  margin: 5px 0 0;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.composer-heading-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  color: #9252bb;
+  background: #f5ebfa;
+  border-radius: 12px;
+}
+
+.composer-heading-icon .ui-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.composer-form {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 18px;
+}
+
+.image-picker {
+  position: relative;
+  display: flex;
+  min-height: 228px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 48% 42%, rgba(248, 230, 250, .88), transparent 55%),
+    #faf7fb;
+  border: 1px dashed #d9c5e1;
+  border-radius: 13px;
+}
+
+.image-picker--preview {
+  border-style: solid;
+  border-color: #eee7f0;
+}
+
+.image-picker--preview::after {
+  position: absolute;
+  inset: 40% 0 0;
+  content: '';
+  background: linear-gradient(transparent, rgba(31, 23, 35, .43));
+  pointer-events: none;
+}
+
+.image-picker > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: image-reveal .35s ease both;
+}
+
+.image-picker-prompt {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  color: #736b78;
+  font-size: 10px;
+}
+
+.image-picker-prompt strong {
+  color: #534a58;
+  font-size: 11px;
+}
+
+.image-picker-icon {
+  display: grid;
+  width: 43px;
+  height: 43px;
+  place-items: center;
+  margin-bottom: 3px;
+  color: #9154b5;
+  background: #fff;
+  border-radius: 15px;
+  box-shadow: 0 6px 15px rgba(110, 75, 128, .09);
+}
+
+.image-picker-icon .ui-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.image-picker-button {
+  position: absolute;
+  z-index: 1;
+  bottom: 12px;
+  min-height: 31px;
+  padding: 0 11px;
+  color: #744296;
+  background: rgba(255, 255, 255, .93);
+  border: 1px solid rgba(255, 255, 255, .9);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+  transition: transform .18s ease, background .18s ease;
+}
+
+.image-picker-button:hover {
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+.image-picker--preview .image-picker-button {
+  color: #fff;
+  background: rgba(45, 35, 51, .44);
+  backdrop-filter: blur(8px);
+}
+
+.composer-fields {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.composer-fields label {
+  margin-top: 2px;
+}
+
+.composer-fields input,
+.composer-fields textarea {
+  width: 100%;
+  padding: 10px 11px;
+  color: #403943;
+  background: #fff;
+  border: 1px solid #eae4ed;
+  border-radius: 9px;
+  outline: 0;
+  resize: vertical;
+  font-size: 11px;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.composer-fields input {
+  height: 39px;
+}
+
+.composer-fields textarea {
+  min-height: 73px;
+  line-height: 1.5;
+}
+
+.composer-fields input::placeholder,
+.composer-fields textarea::placeholder {
+  color: #b2abb6;
+}
+
+.composer-submit {
+  justify-self: start;
+  min-height: 38px;
+  margin-top: 3px;
+}
+
+.composer-error {
+  margin: 2px 0;
+  color: #bd315c;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+  border: 0;
+}
+
+@media (max-width: 600px) {
+  .composer-card {
+    padding: 17px;
+    border-radius: 15px;
+  }
+
+  .composer-form {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .image-picker {
+    min-height: 190px;
+  }
+
+  .composer-submit {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image-picker > img {
+    animation: none;
+  }
 }
