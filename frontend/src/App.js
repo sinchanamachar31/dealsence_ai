@@ -12,11 +12,11 @@ import {
 } from './api';
 
 const SPOTLIGHT_HANDLES = [
-  '@ananya.nourish',
-  '@meera.glowlab',
-  '@rohan.movewell',
-  '@kabir.desksetup',
-  '@tara.earthhome',
+  '@ananya_rao',
+  '@meera_shah',
+  '@rohan_mehta',
+  '@kabir_verma',
+  '@tara_iyer',
 ];
 
 function CreatorAvatar({ creator = {}, size = 'medium', story = false }) {
