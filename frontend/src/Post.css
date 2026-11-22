@@ -309,3 +309,145 @@
     transition: none;
   }
 }
+
+.post-avatar-button,
+.post-handle-button,
+.post-caption-handle {
+  padding: 0;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.post-avatar-button {
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.post-avatar {
+  overflow: hidden;
+}
+
+.post-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.post-handle-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.post-handle-button:hover,
+.post-caption-handle:hover {
+  color: #8548af;
+}
+
+.post-verified {
+  display: inline-grid;
+  width: 15px;
+  height: 15px;
+  place-items: center;
+  color: #fff;
+  background: #5279d8;
+  border-radius: 50%;
+  font-size: 10px;
+}
+
+.post-media-label {
+  color: #9a7ab1;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .9px;
+}
+
+.post-image-frame {
+  background: #15151a;
+}
+
+.post-photo-button {
+  display: grid;
+  width: 100%;
+  max-height: 650px;
+  place-items: center;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: zoom-in;
+}
+
+.post-video {
+  display: block;
+  width: 100%;
+  max-height: 650px;
+  aspect-ratio: 9 / 16;
+  object-fit: contain;
+  background: #111;
+}
+
+.post-like-button {
+  padding: 0 2px;
+  color: #332d35;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-size: 27px;
+  line-height: 1;
+}
+
+.post-like-button--liked {
+  color: #e34769;
+}
+
+.post-like-count,
+.post-comment-link {
+  color: #645b68;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.post-comment-link,
+.post-view-comments {
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.post-comment-link {
+  margin-left: 4px;
+  color: #928a97;
+  font-weight: 400;
+}
+
+.post-comment-link:hover,
+.post-view-comments:hover {
+  color: #8548af;
+}
+
+.post-caption-handle {
+  flex: 0 0 auto;
+  color: #302b32;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.post-view-comments {
+  margin-top: 5px;
+  color: #8c4db9;
+  font-size: 11px;
+  text-align: left;
+}
+
+@media (max-width: 600px) {
+  .post-image-frame,
+  .post-video {
+    max-height: 540px;
+  }
+}

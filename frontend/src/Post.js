@@ -1,10 +1,18 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import './Post.css';
-import Icon from './Icon';
-import { apiUrl } from './api';
+import { resolveMediaUrl } from './api';
 
-function Avatar({ name }) {
-  return <span className="post-avatar" aria-hidden="true">{(name || '?').trim().slice(0, 1).toUpperCase()}</span>;
+function Avatar({ creator = {} }) {
+  const safeCreator = creator && typeof creator === 'object' ? creator : {};
+  const name = [safeCreator.display_name, safeCreator.handle]
+    .find((value) => typeof value === 'string' && value.trim()) || 'Creator';
+  return (
+    <span className="post-avatar">
+      {safeCreator.avatar_url
+        ? <img src={resolveMediaUrl(safeCreator.avatar_url)} alt="" />
+        : name.trim().slice(0, 1).toUpperCase()}
+    </span>
+  );
 }
 
 function formatDate(value) {
@@ -18,146 +26,108 @@ function formatDate(value) {
   return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(date);
 }
 
-function Post({ post, authToken, authTokenType, username, canDelete, onDelete, onLogin, animationIndex = 0 }) {
-  const [comments, setComments] = useState(post.comments || []);
-  const [newComment, setNewComment] = useState('');
-  const [isPostingComment, setIsPostingComment] = useState(false);
-  const commentInputRef = useRef(null);
-  const imageUrl = post.image_url_type === 'absolute' ? post.image_url : apiUrl(post.image_url);
-
-  const handleDelete = async () => {
-    if (!window.confirm('Delete this post? This cannot be undone.')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(apiUrl(`post/delete/${post.id}`), {
-        method: 'DELETE',
-        headers: new Headers({ Authorization: `${authTokenType} ${authToken}` }),
-      });
-      if (!response.ok) {
-        throw new Error(`Could not delete post (${response.status}).`);
-      }
-      onDelete(post.id);
-    } catch (error) {
-      window.alert(error.message);
-    }
-  };
-
-  const postComment = async (event) => {
-    event.preventDefault();
-    const text = newComment.trim();
-    if (!text || isPostingComment) {
-      return;
-    }
-
-    setIsPostingComment(true);
-    try {
-      const response = await fetch(apiUrl('post/new-comment'), {
-        method: 'POST',
-        headers: new Headers({
-          Authorization: `${authTokenType} ${authToken}`,
-          'Content-Type': 'application/json',
-        }),
-        body: JSON.stringify({
-          username,
-          text,
-          likes: 0,
-          post_id: post.id,
-        }),
-      });
-      if (!response.ok) {
-        throw new Error(`Could not post comment (${response.status}).`);
-      }
-
-      const commentsResponse = await fetch(apiUrl(`post/all-comment/${post.id}`));
-      if (!commentsResponse.ok) {
-        throw new Error(`Could not refresh comments (${commentsResponse.status}).`);
-      }
-      setComments(await commentsResponse.json());
-      setNewComment('');
-    } catch (error) {
-      window.alert(error.message);
-    } finally {
-      setIsPostingComment(false);
-    }
-  };
-
-  const creatorName = post.user?.username || 'Someone';
+function Post({
+  post,
+  onCreatorClick = () => {},
+  onOpenTheater = () => {},
+  animationIndex = 0,
+}) {
+  const [liked, setLiked] = useState(false);
+  const safePost = post && typeof post === 'object' ? post : {};
+  const creator = safePost.creator && typeof safePost.creator === 'object' && !Array.isArray(safePost.creator)
+    ? safePost.creator
+    : {};
+  const handle = typeof creator.handle === 'string' && creator.handle ? creator.handle : '@creator';
+  const niche = typeof creator.niche === 'string' && creator.niche ? creator.niche : 'Creator';
+  const thumbUrl = resolveMediaUrl(safePost.thumbnail_path);
+  const mediaUrl = resolveMediaUrl(safePost.video_path);
+  const comments = Array.isArray(safePost.comments)
+    ? safePost.comments.filter((comment) => comment && typeof comment === 'object')
+    : [];
 
   return (
     <article
       className="post-card"
-      style={{ '--post-delay': `${Math.min(animationIndex, 5) * 70}ms` }}
+      style={{ '--post-delay': `${Math.min(animationIndex, 5) * 55}ms` }}
     >
       <header className="post-header">
         <div className="post-identity">
-          <Avatar name={creatorName} />
+          <button
+            className="post-avatar-button"
+            onClick={() => onCreatorClick(handle)}
+            aria-label={`Open ${handle}'s profile`}
+          >
+            <Avatar creator={creator} />
+          </button>
           <div className="post-identity-copy">
-            <strong>{creatorName}</strong>
-            <span>{post.post_title || 'A moment shared'}{formatDate(post.created_at) ? ` · ${formatDate(post.created_at)}` : ''}</span>
+            <button className="post-handle-button" onClick={() => onCreatorClick(handle)}>
+              {handle}
+              {creator.is_demo_creator && <span className="post-verified" aria-label="Spotlight creator">✓</span>}
+            </button>
+            <span>{niche}{formatDate(safePost.posted_at) ? ` · ${formatDate(safePost.posted_at)}` : ''}</span>
           </div>
         </div>
-        {canDelete && (
-          <button className="post-menu-button" onClick={handleDelete} aria-label="Delete your post" title="Delete post">
-            <Icon name="more" />
-          </button>
-        )}
+        <span className="post-media-label">{safePost.media_type === 'post' ? 'PHOTO' : 'REEL'}</span>
       </header>
 
       <div className="post-image-frame">
-        <img className="post-image" src={imageUrl} alt={post.caption || post.post_title || 'Shared moment'} loading="lazy" />
+        {safePost.video_path ? (
+          <video
+            className="post-video"
+            src={mediaUrl}
+            poster={thumbUrl}
+            controls
+            playsInline
+            preload="metadata"
+          />
+        ) : (
+          <button
+            className="post-photo-button"
+            onClick={() => onOpenTheater(safePost)}
+            aria-label={`Open photo by ${handle}`}
+          >
+            <img
+              className="post-image"
+              src={thumbUrl || undefined}
+              alt={safePost.caption || 'Creator post'}
+              loading="lazy"
+            />
+          </button>
+        )}
       </div>
 
       <div className="post-content">
         <div className="post-reaction-row">
           <button
-            className="post-reaction-button"
-            onClick={() => commentInputRef.current?.focus()}
-            aria-label="Write a comment"
-            title="Write a comment"
+            className={`post-like-button${liked ? ' post-like-button--liked' : ''}`}
+            onClick={() => setLiked((current) => !current)}
+            aria-label={liked ? 'Unlike post' : 'Like post'}
+            aria-pressed={liked}
           >
-            <Icon name="comment" />
+            {liked ? '♥' : '♡'}
           </button>
-          <span className="comment-count">{comments.length > 0 ? `${comments.length} ${comments.length === 1 ? 'comment' : 'comments'}` : 'Start the conversation'}</span>
-          <span className="post-content-sparkle" aria-hidden="true"><Icon name="sparkle" /></span>
+          <span className="post-like-count">{(Number(safePost.likes) || 0) + (liked ? 1 : 0)} likes</span>
+          <button className="post-comment-link" onClick={() => onOpenTheater(safePost)}>
+            {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
+          </button>
         </div>
 
-        {post.caption && (
+        {safePost.caption && (
           <p className="post-caption">
-            <strong>{creatorName}</strong>
-            <span>{post.caption}</span>
+            <button className="post-caption-handle" onClick={() => onCreatorClick(handle)}>{handle}</button>
+            <span>{safePost.caption}</span>
           </p>
         )}
 
-        {comments.length > 0 && (
-          <div className="post-comments" aria-label="Comments">
-            {comments.map((comment) => (
-              <p className="post-comment" key={comment.id || `${comment.username}-${comment.text}-${comment.timestamp}`}>
-                <strong>{comment.username} </strong>
-                <span>{comment.text}</span>
-              </p>
-            ))}
-          </div>
-        )}
-
-        {authToken ? (
-          <form className="post-comment-form" onSubmit={postComment}>
-            <input
-              ref={commentInputRef}
-              type="text"
-              placeholder="Add a thoughtful comment…"
-              value={newComment}
-              onChange={(event) => setNewComment(event.target.value)}
-              aria-label="Write a comment"
-            />
-            <button type="submit" disabled={!newComment.trim() || isPostingComment}>
-              {isPostingComment ? 'Sending…' : 'Post'}
-            </button>
-          </form>
-        ) : (
-          <button className="post-login-prompt"           onClick={onLogin}>
-            Log in to join the conversation
+        {comments.slice(0, 2).map((comment, index) => (
+          <p className="post-comment" key={comment.id || `${comment.author_handle}-${index}`}>
+            <strong>{comment.author_handle || 'community'} </strong>
+            <span>{comment.text}</span>
+          </p>
+        ))}
+        {comments.length > 2 && (
+          <button className="post-view-comments" onClick={() => onOpenTheater(safePost)}>
+            View all {comments.length} comments
           </button>
         )}
       </div>
